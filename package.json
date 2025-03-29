@@ -4,11 +4,12 @@
     "description": "Discord Bot for syncing messages to Google Tasks",
     "main": "index.js",
     "scripts": {
-      "start": "node index.js"
+        "start": "node index.js"
     },
     "dependencies": {
-      "discord.js": "^14.0.0",
-      "dotenv": "^16.0.0",
-      "node-fetch": "^2.6.1"
+        "discord.js": "^14.0.0",
+        "dotenv": "^16.0.0",
+        "googleapis": "^148.0.0",
+        "node-fetch": "^2.6.1"
     }
-  }
+}
