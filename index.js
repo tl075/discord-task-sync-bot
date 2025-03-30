@@ -9,7 +9,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions // リアクションを取得するために修正
+        GatewayIntentBits.GuildMessageReactions // リアクションを取得するために追加
     ],
     partials: ['MESSAGE', 'CHANNEL', 'REACTION'] // リアクションを取得するために必要
 });
@@ -26,6 +26,9 @@ oauth2Client.setCredentials({
 });
 
 const tasks = google.tasks({ version: 'v1', auth: oauth2Client });
+
+// タスクIDを保存するためのMap
+const taskMap = new Map();
 
 client.once('ready', () => {
     console.log(`✅ Bot logged in as ${client.user.tag}`);
@@ -52,11 +55,14 @@ client.on('messageCreate', async (message) => {
                 }
             });
 
+            const taskId = task.data.id;
             const taskTitle = task.data.title;
+
+            taskMap.set(message.id, taskId); // DiscordメッセージIDとGoogle Task IDを保存
 
             await message.delete();
             const replyMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
-            console.log(`Task created: ${task.data.id}`);
+            console.log(`Task created: ${taskId}`);
 
             await replyMessage.react('🗑️'); // ゴミ箱アイコンに変更
         } catch (error) {
@@ -83,11 +89,14 @@ client.on('messageCreate', async (message) => {
                 }
             });
 
+            const taskId = task.data.id;
             const taskTitle = task.data.title;
+
+            taskMap.set(message.id, taskId); // DiscordメッセージIDとGoogle Task IDを保存
 
             await message.delete();
             const replyMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
-            console.log(`Task created: ${task.data.id}`);
+            console.log(`Task created: ${taskId}`);
 
             await replyMessage.react('🗑️'); // ゴミ箱アイコンに変更
         } catch (error) {
@@ -103,15 +112,28 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
 
     try {
-        // Partial（断片的な）リアクションの場合はフェッチする
         if (reaction.partial) await reaction.fetch();
 
         if (reaction.emoji.name === '🗑️') {
-            await reaction.message.delete();
-            console.log('🗑️ Task message deleted successfully.');
+            const messageId = reaction.message.id;
+            const taskId = taskMap.get(messageId);
+
+            if (taskId) {
+                // Google Tasksのタスクを削除
+                await tasks.tasks.delete({
+                    tasklist: '@default',
+                    task: taskId,
+                });
+
+                console.log(`🗑️ Task ${taskId} deleted from Google Tasks.`);
+                taskMap.delete(messageId);
+
+                // Discordのメッセージを削除
+                await reaction.message.delete();
+            }
         }
     } catch (error) {
-        console.error('Failed to delete task message:', error);
+        console.error('Failed to delete task:', error);
     }
 });
 
