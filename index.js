@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const { google } = require('googleapis');
 require('dotenv').config();
 const axios = require('axios');
@@ -9,8 +9,9 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.MessageReactions // リアクションイベントのために追加
-    ]
+        GatewayIntentBits.GuildMessageReactions // リアクションを取得するために修正
+    ],
+    partials: ['MESSAGE', 'CHANNEL', 'REACTION'] // リアクションを取得するために必要
 });
 
 // Google Tasks API 設定
@@ -101,13 +102,16 @@ client.on('messageCreate', async (message) => {
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
 
-    if (reaction.emoji.name === '🗑️') {
-        try {
+    try {
+        // Partial（断片的な）リアクションの場合はフェッチする
+        if (reaction.partial) await reaction.fetch();
+
+        if (reaction.emoji.name === '🗑️') {
             await reaction.message.delete();
             console.log('🗑️ Task message deleted successfully.');
-        } catch (error) {
-            console.error('Failed to delete task message:', error);
         }
+    } catch (error) {
+        console.error('Failed to delete task message:', error);
     }
 });
 
