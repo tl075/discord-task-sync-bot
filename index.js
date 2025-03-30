@@ -38,7 +38,8 @@ client.on('messageCreate', async (message) => {
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
             const today = new Date();
-            const todayISO = today.toISOString().split('T')[0];  // YYYY-MM-DD 形式
+            today.setUTCHours(0, 0, 0, 0);
+            const todayISO = today.toISOString();
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
@@ -51,16 +52,11 @@ client.on('messageCreate', async (message) => {
 
             const taskTitle = task.data.title;
 
-            // ユーザーのメッセージを削除する
             await message.delete();
-
-            // Botからタスク名を返信
             const replyMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
 
-            // メッセージにリアクションを追加
             await replyMessage.react('📌');
-
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             await message.delete();
@@ -73,7 +69,8 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowISO = tomorrow.toISOString().split('T')[0];  // YYYY-MM-DD 形式
+            tomorrow.setUTCHours(0, 0, 0, 0);
+            const tomorrowISO = tomorrow.toISOString();
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
@@ -86,16 +83,11 @@ client.on('messageCreate', async (message) => {
 
             const taskTitle = task.data.title;
 
-            // ユーザーのメッセージを削除する
             await message.delete();
-
-            // Botからタスク名を返信
             const replyMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
 
-            // メッセージにリアクションを追加
             await replyMessage.react('📌');
-
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             await message.delete();
