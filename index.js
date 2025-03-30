@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { google } = require('googleapis');
 require('dotenv').config();
 const axios = require('axios');
@@ -8,10 +8,8 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions // 追加
-    ],
-    partials: [Partials.Message, Partials.Channel, Partials.Reaction] // 部分的にロードする必要がある
+        GatewayIntentBits.MessageContent
+    ]
 });
 
 // Google Tasks API 設定
@@ -26,7 +24,6 @@ oauth2Client.setCredentials({
 });
 
 const tasks = google.tasks({ version: 'v1', auth: oauth2Client });
-const taskMap = new Map();
 
 client.once('ready', () => {
     console.log(`✅ Bot logged in as ${client.user.tag}`);
@@ -39,7 +36,7 @@ client.on('messageCreate', async (message) => {
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
             const today = new Date();
-            const todayISO = today.toISOString().split('T')[0]; 
+            const todayISO = today.toISOString().split('T')[0];  // 日付部分のみ取得 (YYYY-MM-DD)
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
@@ -51,15 +48,13 @@ client.on('messageCreate', async (message) => {
             });
 
             const taskTitle = task.data.title;
-            const taskId = task.data.id;
 
+            // ユーザーのメッセージを削除する
             await message.delete();
 
-            const replyMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
-            taskMap.set(replyMessage.id, taskId);
-
-            await replyMessage.react('❌');
-            console.log(`Task created: ${taskId}`);
+            // Botからタスク名を返信
+            await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
+            console.log(`Task created: ${task.data.id}`);
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
@@ -71,7 +66,7 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowISO = tomorrow.toISOString().split('T')[0];  
+            const tomorrowISO = tomorrow.toISOString().split('T')[0];  // 日付部分のみ取得 (YYYY-MM-DD)
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
@@ -83,42 +78,16 @@ client.on('messageCreate', async (message) => {
             });
 
             const taskTitle = task.data.title;
-            const taskId = task.data.id;
 
+            // ユーザーのメッセージを削除する
             await message.delete();
 
-            const replyMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
-            taskMap.set(replyMessage.id, taskId);
-
-            await replyMessage.react('❌');
-            console.log(`Task created: ${taskId}`);
+            // Botからタスク名を返信
+            await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
+            console.log(`Task created: ${task.data.id}`);
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
-        }
-    }
-});
-
-// リアクションでタスクを削除
-client.on('messageReactionAdd', async (reaction, user) => {
-    if (user.bot) return;
-
-    if (reaction.emoji.name === '❌') {
-        const messageId = reaction.message.id;
-
-        if (taskMap.has(messageId)) {
-            const taskId = taskMap.get(messageId);
-            try {
-                await tasks.tasks.delete({
-                    tasklist: '@default',
-                    task: taskId
-                });
-                
-                await reaction.message.channel.send(`✅ タスク「${reaction.message.content}」を削除しました！`);
-                taskMap.delete(messageId); 
-            } catch (error) {
-                console.error('Error deleting task:', error.response?.data || error.message);
-            }
         }
     }
 });
