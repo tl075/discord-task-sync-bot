@@ -58,12 +58,15 @@ client.on('messageCreate', async (message) => {
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setUTCHours(23, 59, 59, 0);  // 明日の 23:59:59 を設定
 
+            // `tomorrow.toISOString()` は `2025-03-31T23:59:59.000Z` のような形式を返すので `.split('Z')[0]` で Z を削除
+            const formattedDueDate = tomorrow.toISOString().split('Z')[0]; 
+
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: tomorrow.toISOString().split('.')[0]  // ミリ秒部分を取り除いた ISO 形式
+                    due: formattedDueDate  // 修正ポイント
                 }
             });
 
