@@ -9,7 +9,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.MessageReactions
+        GatewayIntentBits.GuildMessageReactions  // ← ここを修正
     ]
 });
 
