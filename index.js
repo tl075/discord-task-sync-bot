@@ -85,7 +85,7 @@ client.on('messageCreate', async (message) => {
             // ユーザーのメッセージを削除する
             await message.delete();
 
-            // Botからタスク名を返信
+            // Botからタスク名
             const sentMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
 
