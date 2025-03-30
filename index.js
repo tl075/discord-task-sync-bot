@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { google } = require('googleapis');
 require('dotenv').config();
 const axios = require('axios');
@@ -35,21 +35,21 @@ client.on('messageCreate', async (message) => {
     // 今日のタスクとして追加
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
-            const today = new Date();
-            today.setHours(23, 59, 59, 0);  // 今日の23:59:59を設定
-
-            const formattedTodayDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString();
-
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: formattedTodayDate  // 今日のタスクに due を設定する
                 }
             });
 
-            message.reply('✅ 今日のタスクとしてGoogle Tasksに登録しました！');
+            const taskTitle = task.data.title;
+
+            // ユーザーのメッセージを削除する
+            await message.delete();
+
+            // Botからタスク名を返信
+            await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
@@ -62,20 +62,23 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(23, 59, 59, 0);  // 明日の23:59:59を設定
-
-            const formattedDueDate = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString();
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: formattedDueDate  // 明日のタスクに due を設定する
+                    due: tomorrow.toISOString().split('T')[0]
                 }
             });
 
-            message.reply('✅ 明日のタスクとしてGoogle Tasksに登録しました！');
+            const taskTitle = task.data.title;
+
+            // ユーザーのメッセージを削除する
+            await message.delete();
+
+            // Botからタスク名を返信
+            await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
