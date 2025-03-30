@@ -9,7 +9,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions // これを追加
+        GatewayIntentBits.GuildMessageReactions // 必須
     ]
 });
 
@@ -40,14 +40,14 @@ client.on('messageCreate', async (message) => {
     if (channelId === process.env.TODAY_CHANNEL_ID || channelId === process.env.TOMORROW_CHANNEL_ID) {
         try {
             const taskDate = channelId === process.env.TODAY_CHANNEL_ID ? new Date() : new Date(new Date().setDate(new Date().getDate() + 1));
-            const dueDate = taskDate.toISOString().split('T')[0];
+            const dueDate = taskDate.toISOString(); // ISO形式で指定 (例: 2025-03-30T12:00:00.000Z)
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: dueDate
+                    due: dueDate  // ← 修正: 完全な ISO 8601 フォーマットを指定
                 }
             });
 
