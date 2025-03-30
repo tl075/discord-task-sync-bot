@@ -35,11 +35,17 @@ client.on('messageCreate', async (message) => {
     // 今日のタスクとして追加
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
+            const today = new Date();
+            today.setHours(23, 59, 59, 0);  // 今日の23:59:59を設定
+
+            const formattedTodayDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString();
+
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
+                    due: formattedTodayDate  // 今日のタスクに due を設定する
                 }
             });
 
@@ -58,7 +64,6 @@ client.on('messageCreate', async (message) => {
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(23, 59, 59, 0);  // 明日の23:59:59を設定
 
-            // 正しい形式に変換
             const formattedDueDate = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString();
 
             const task = await tasks.tasks.insert({
@@ -66,7 +71,7 @@ client.on('messageCreate', async (message) => {
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: formattedDueDate  // 修正ポイント
+                    due: formattedDueDate  // 明日のタスクに due を設定する
                 }
             });
 
