@@ -8,7 +8,8 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.MessageReactions // リアクションイベントのために追加
     ]
 });
 
@@ -56,7 +57,7 @@ client.on('messageCreate', async (message) => {
             const replyMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
 
-            await replyMessage.react('📌');
+            await replyMessage.react('🗑️'); // ゴミ箱アイコンに変更
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             await message.delete();
@@ -87,7 +88,7 @@ client.on('messageCreate', async (message) => {
             const replyMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
 
-            await replyMessage.react('📌');
+            await replyMessage.react('🗑️'); // ゴミ箱アイコンに変更
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             await message.delete();
@@ -100,10 +101,10 @@ client.on('messageCreate', async (message) => {
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
 
-    if (reaction.emoji.name === '📌') {
+    if (reaction.emoji.name === '🗑️') {
         try {
             await reaction.message.delete();
-            console.log('Task message deleted successfully.');
+            console.log('🗑️ Task message deleted successfully.');
         } catch (error) {
             console.error('Failed to delete task message:', error);
         }
