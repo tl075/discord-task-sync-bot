@@ -9,9 +9,9 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions // リアクションを取得するために追加
+        GatewayIntentBits.GuildMessageReactions // リアクション取得用
     ],
-    partials: ['MESSAGE', 'CHANNEL', 'REACTION'] // リアクションを取得するために必要
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction] // リアクション取得のために設定
 });
 
 // Google Tasks API 設定
