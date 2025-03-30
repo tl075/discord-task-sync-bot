@@ -69,14 +69,14 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowISO = tomorrow.toISOString().split('T')[0];  // 明日の日付だけを取得 (YYYY-MM-DD)
+            const tomorrowISO = tomorrow.toISOString();  // フルISOフォーマットで渡す
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: tomorrowISO  // Google Tasks API に渡す形式
+                    due: tomorrowISO  // フルISOフォーマットを使用
                 }
             });
 
@@ -85,7 +85,7 @@ client.on('messageCreate', async (message) => {
             // ユーザーのメッセージを削除する
             await message.delete();
 
-            // Botからタスク名
+            // Botからタスク名を返信
             const sentMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
 
