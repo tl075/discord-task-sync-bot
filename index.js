@@ -26,7 +26,7 @@ oauth2Client.setCredentials({
 const tasks = google.tasks({ version: 'v1', auth: oauth2Client });
 
 client.once('ready', () => {
-    console.log(✅ Bot logged in as ${client.user.tag});
+    console.log(`✅ Bot logged in as ${client.user.tag}`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -36,14 +36,14 @@ client.on('messageCreate', async (message) => {
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
             const today = new Date();
-            const todayISO = today.toISOString();  // ISO形式で指定 (YYYY-MM-DDTHH:MM:SS.sssZ)
+            const todayISO = today.toISOString().split('T')[0];  // 今日の日付だけを取得 (YYYY-MM-DD)
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: todayISO
+                    due: todayISO  // Google Tasks API に渡す形式
                 }
             });
 
@@ -53,8 +53,11 @@ client.on('messageCreate', async (message) => {
             await message.delete();
 
             // Botからタスク名を返信
-            await message.channel.send(✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！);
-            console.log(Task created: ${task.data.id});
+            const sentMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
+            console.log(`Task created: ${task.data.id}`);
+
+            // メッセージにリアクションを追加
+            await sentMessage.react('✅');
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
@@ -66,14 +69,14 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowISO = tomorrow.toISOString();  // ISO形式で指定 (YYYY-MM-DDTHH:MM:SS.sssZ)
+            const tomorrowISO = tomorrow.toISOString().split('T')[0];  // 明日の日付だけを取得 (YYYY-MM-DD)
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: tomorrowISO
+                    due: tomorrowISO  // Google Tasks API に渡す形式
                 }
             });
 
@@ -83,8 +86,11 @@ client.on('messageCreate', async (message) => {
             await message.delete();
 
             // Botからタスク名を返信
-            await message.channel.send(✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！);
-            console.log(Task created: ${task.data.id});
+            const sentMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
+            console.log(`Task created: ${task.data.id}`);
+
+            // メッセージにリアクションを追加
+            await sentMessage.react('✅');
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
