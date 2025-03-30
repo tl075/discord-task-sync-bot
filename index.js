@@ -56,16 +56,16 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(23, 59, 59, 0);  // UTC ではなくローカル時間の 23:59:59 に設定
 
-            const formattedDueDate = tomorrow.toISOString().split('.')[0]; // ミリ秒を取り除いた形式にする
+            // 必要なのはシンプルな日付形式 "YYYY-MM-DD"
+            const formattedDueDate = tomorrow.toISOString().split('T')[0];
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: formattedDueDate  // ISO形式の "Z" を含まない形式
+                    due: formattedDueDate  // 修正ポイント
                 }
             });
 
