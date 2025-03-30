@@ -98,4 +98,36 @@ client.on('messageCreate', async (message) => {
     }
 });
 
+// リアクションイベントを処理
+client.on('messageReactionAdd', async (reaction, user) => {
+    if (user.bot) return; // Botのリアクションは無視
+
+    const message = reaction.message;
+
+    // リアクションが ✅ であることを確認
+    if (reaction.emoji.name === '✅') {
+        try {
+            // メッセージに含まれる Task ID を取得 (例: Task created: <task_id>)
+            const taskIdMatch = message.content.match(/Task created: (\S+)/);
+            if (!taskIdMatch) return;
+
+            const taskId = taskIdMatch[1];
+            const tasklist = '@default';
+
+            // Google Tasks API からタスクを削除
+            await tasks.tasks.delete({
+                tasklist,
+                task: taskId,
+            });
+
+            // メッセージを削除
+            await message.delete();
+
+            console.log(`Task deleted: ${taskId}`);
+        } catch (error) {
+            console.error('Error deleting task:', error.response?.data || error.message);
+        }
+    }
+});
+
 client.login(process.env.DISCORD_TOKEN);
