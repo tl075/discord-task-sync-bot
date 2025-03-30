@@ -8,8 +8,7 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions // リアクションのために追加
+        GatewayIntentBits.MessageContent
     ]
 });
 
@@ -33,31 +32,39 @@ client.once('ready', () => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
+    const originalContent = message.content;
+
     // 今日のタスクとして追加
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
             const today = new Date();
-            const todayISO = today.toISOString().split('T')[0]; // YYYY-MM-DD 形式
+            const todayISO = today.toISOString().split('T')[0];  // YYYY-MM-DD 形式
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
-                    title: message.content,
+                    title: originalContent,
                     notes: 'Discordから追加されたタスク',
-                    due: `${todayISO}T00:00:00.000Z`  // タスクの期限をUTC 0時に設定
+                    due: todayISO
                 }
             });
 
             const taskTitle = task.data.title;
 
+            // ユーザーのメッセージを削除する
             await message.delete();
+
+            // Botからタスク名を返信
             const replyMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
 
-            await replyMessage.react('✅'); // リアクション追加
+            // メッセージにリアクションを追加
+            await replyMessage.react('📌');
+
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
-            message.reply('❌ タスクの追加に失敗しました。');
+            await message.delete();
+            await message.channel.send(`❌ タスク「**${originalContent}**」の追加に失敗しました。`);
         }
     }
 
@@ -66,60 +73,47 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowISO = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD 形式
+            const tomorrowISO = tomorrow.toISOString().split('T')[0];  // YYYY-MM-DD 形式
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
-                    title: message.content,
+                    title: originalContent,
                     notes: 'Discordから追加されたタスク',
-                    due: `${tomorrowISO}T00:00:00.000Z`  // タスクの期限をUTC 0時に設定
+                    due: tomorrowISO
                 }
             });
 
             const taskTitle = task.data.title;
 
+            // ユーザーのメッセージを削除する
             await message.delete();
+
+            // Botからタスク名を返信
             const replyMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${task.data.id}`);
 
-            await replyMessage.react('✅'); // リアクション追加
+            // メッセージにリアクションを追加
+            await replyMessage.react('📌');
+
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
-            message.reply('❌ タスクの追加に失敗しました。');
+            await message.delete();
+            await message.channel.send(`❌ タスク「**${originalContent}**」の追加に失敗しました。`);
         }
     }
 });
 
+// リアクションが押されたときのイベント
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
-    if (reaction.emoji.name === '✅') {
+
+    if (reaction.emoji.name === '📌') {
         try {
-            const message = reaction.message;
-            const taskTitle = message.content.match(/「\*\*(.*)\*\*」/)[1]; // タスク名を取り出す正規表現
-
-            const taskLists = await tasks.tasklists.list();
-            const taskListId = taskLists.data.items[0].id;
-
-            const taskList = await tasks.tasks.list({
-                tasklist: taskListId
-            });
-
-            const task = taskList.data.items.find(t => t.title === taskTitle);
-
-            if (task) {
-                await tasks.tasks.delete({
-                    tasklist: taskListId,
-                    task: task.id
-                });
-
-                await message.delete(); // メッセージを削除
-                console.log(`Task deleted: ${task.id}`);
-            } else {
-                console.log(`Task not found: ${taskTitle}`);
-            }
+            await reaction.message.delete();
+            console.log('Task message deleted successfully.');
         } catch (error) {
-            console.error('Error deleting task:', error.response?.data || error.message);
+            console.error('Failed to delete task message:', error);
         }
     }
 });
