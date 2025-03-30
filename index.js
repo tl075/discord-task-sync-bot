@@ -36,14 +36,14 @@ client.on('messageCreate', async (message) => {
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
             const today = new Date();
-            const todayDate = today.toISOString().split('T')[0]; // 今日の日付のみ (YYYY-MM-DD 形式)
+            const todayISO = today.toISOString();  // ISO形式で指定 (YYYY-MM-DDTHH:MM:SS.sssZ)
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: todayDate // 今日の日付を指定することで "今日のタスク" として扱う
+                    due: todayISO
                 }
             });
 
@@ -66,14 +66,14 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowDate = tomorrow.toISOString().split('T')[0]; // 明日の日付のみ (YYYY-MM-DD 形式)
+            const tomorrowISO = tomorrow.toISOString();  // ISO形式で指定 (YYYY-MM-DDTHH:MM:SS.sssZ)
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: tomorrowDate
+                    due: tomorrowISO
                 }
             });
 
