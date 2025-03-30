@@ -35,6 +35,7 @@ client.once('ready', () => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
+    // 今日のタスクとして追加
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
             const today = new Date();
@@ -45,7 +46,7 @@ client.on('messageCreate', async (message) => {
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: todayISO
+                    due: todayISO // ← 修正点。`YYYY-MM-DD` 形式で指定する。
                 }
             });
 
@@ -54,6 +55,37 @@ client.on('messageCreate', async (message) => {
 
             await message.delete();
             const botMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
+            await botMessage.react('❌');
+
+            taskIdMap.set(botMessage.id, taskId);
+            console.log(`Task created: ${taskId}`);
+        } catch (error) {
+            console.error('Error adding task:', error.response?.data || error.message);
+            message.reply('❌ タスクの追加に失敗しました。');
+        }
+    }
+
+    // 明日のタスクとして追加
+    if (message.channel.id === process.env.TOMORROW_CHANNEL_ID) {
+        try {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowISO = tomorrow.toISOString().split('T')[0];  // 修正: 日付だけを使用
+
+            const task = await tasks.tasks.insert({
+                tasklist: '@default',
+                requestBody: {
+                    title: message.content,
+                    notes: 'Discordから追加されたタスク',
+                    due: tomorrowISO // ← 修正点。`YYYY-MM-DD` 形式で指定する。
+                }
+            });
+
+            const taskTitle = task.data.title;
+            const taskId = task.data.id;
+
+            await message.delete();
+            const botMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             await botMessage.react('❌');
 
             taskIdMap.set(botMessage.id, taskId);
