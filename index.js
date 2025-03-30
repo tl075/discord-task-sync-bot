@@ -62,7 +62,7 @@ client.on('messageCreate', async (message) => {
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: tomorrow.toISOString().split('T')[0]  // ← ここを修正しました
+                    due: tomorrow.toISOString().split('T')[0]  // ← ここを修正した
                 }
             });
     
