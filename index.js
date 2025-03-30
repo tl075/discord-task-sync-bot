@@ -56,9 +56,10 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(23, 59, 59, 0);  // 明日の23:59:59を設定
 
-            // 必要なのはシンプルな日付形式 "YYYY-MM-DD"
-            const formattedDueDate = tomorrow.toISOString().split('T')[0];
+            // 正しい形式に変換
+            const formattedDueDate = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString();
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
