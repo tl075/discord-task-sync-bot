@@ -9,7 +9,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions  // ← ここを修正
+        GatewayIntentBits.GuildMessageReactions // リアクションのために追加
     ]
 });
 
@@ -26,8 +26,6 @@ oauth2Client.setCredentials({
 
 const tasks = google.tasks({ version: 'v1', auth: oauth2Client });
 
-let taskMessageMap = new Map();  // タスクIDとメッセージIDを紐づけて保存
-
 client.once('ready', () => {
     console.log(`✅ Bot logged in as ${client.user.tag}`);
 });
@@ -39,31 +37,24 @@ client.on('messageCreate', async (message) => {
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
             const today = new Date();
-            const todayISO = today.toISOString().split('T')[0];  // 日付部分だけ取得 (YYYY-MM-DD)
+            const todayISO = today.toISOString().split('T')[0]; // YYYY-MM-DD 形式
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: todayISO
+                    due: `${todayISO}T00:00:00.000Z`  // タスクの期限をUTC 0時に設定
                 }
             });
 
             const taskTitle = task.data.title;
-            const taskId = task.data.id;
 
-            // ユーザーのメッセージを削除する
             await message.delete();
-
-            // Botからタスク名を返信して、✅ リアクションを追加する
             const replyMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
-            await replyMessage.react('✅');
+            console.log(`Task created: ${task.data.id}`);
 
-            // タスクIDとメッセージIDを保存
-            taskMessageMap.set(replyMessage.id, taskId);
-
-            console.log(`Task created: ${taskId}`);
+            await replyMessage.react('✅'); // リアクション追加
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
@@ -75,31 +66,24 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowISO = tomorrow.toISOString().split('T')[0];  // 日付部分だけ取得 (YYYY-MM-DD)
+            const tomorrowISO = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD 形式
 
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: tomorrowISO
+                    due: `${tomorrowISO}T00:00:00.000Z`  // タスクの期限をUTC 0時に設定
                 }
             });
 
             const taskTitle = task.data.title;
-            const taskId = task.data.id;
 
-            // ユーザーのメッセージを削除する
             await message.delete();
-
-            // Botからタスク名を返信して、✅ リアクションを追加する
             const replyMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
-            await replyMessage.react('✅');
+            console.log(`Task created: ${task.data.id}`);
 
-            // タスクIDとメッセージIDを保存
-            taskMessageMap.set(replyMessage.id, taskId);
-
-            console.log(`Task created: ${taskId}`);
+            await replyMessage.react('✅'); // リアクション追加
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
@@ -107,28 +91,33 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// リアクションが押された時の処理
 client.on('messageReactionAdd', async (reaction, user) => {
-    if (reaction.emoji.name === '✅' && !user.bot) {
-        const messageId = reaction.message.id;
-        const taskId = taskMessageMap.get(messageId);
-
-        if (!taskId) return;
-
+    if (user.bot) return;
+    if (reaction.emoji.name === '✅') {
         try {
-            // Google Tasksからタスクを削除
-            await tasks.tasks.delete({
-                tasklist: '@default',
-                task: taskId,
+            const message = reaction.message;
+            const taskTitle = message.content.match(/「\*\*(.*)\*\*」/)[1]; // タスク名を取り出す正規表現
+
+            const taskLists = await tasks.tasklists.list();
+            const taskListId = taskLists.data.items[0].id;
+
+            const taskList = await tasks.tasks.list({
+                tasklist: taskListId
             });
 
-            // メッセージを削除
-            await reaction.message.delete();
+            const task = taskList.data.items.find(t => t.title === taskTitle);
 
-            // マップからも削除
-            taskMessageMap.delete(messageId);
+            if (task) {
+                await tasks.tasks.delete({
+                    tasklist: taskListId,
+                    task: task.id
+                });
 
-            console.log(`Task deleted: ${taskId}`);
+                await message.delete(); // メッセージを削除
+                console.log(`Task deleted: ${task.id}`);
+            } else {
+                console.log(`Task not found: ${taskTitle}`);
+            }
         } catch (error) {
             console.error('Error deleting task:', error.response?.data || error.message);
         }
