@@ -9,9 +9,9 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions // リアクション取得用
+        GatewayIntentBits.GuildMessageReactions // リアクションの取得に必要
     ],
-    partials: [Partials.Message, Partials.Channel, Partials.Reaction] // リアクション取得のために設定
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction] // リアクション取得用に設定
 });
 
 // Google Tasks API 設定
@@ -111,29 +111,39 @@ client.on('messageCreate', async (message) => {
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
 
-    try {
-        if (reaction.partial) await reaction.fetch();
-
-        if (reaction.emoji.name === '🗑️') {
-            const messageId = reaction.message.id;
-            const taskId = taskMap.get(messageId);
-
-            if (taskId) {
-                // Google Tasksのタスクを削除
-                await tasks.tasks.delete({
-                    tasklist: '@default',
-                    task: taskId,
-                });
-
-                console.log(`🗑️ Task ${taskId} deleted from Google Tasks.`);
-                taskMap.delete(messageId);
-
-                // Discordのメッセージを削除
-                await reaction.message.delete();
-            }
+    if (reaction.partial) {
+        try {
+            await reaction.fetch();
+        } catch (error) {
+            console.error('Error fetching the message:', error);
+            return;
         }
-    } catch (error) {
-        console.error('Failed to delete task:', error);
+    }
+
+    if (reaction.emoji.name === '🗑️') {
+        const messageId = reaction.message.id;
+        const taskId = taskMap.get(messageId);
+
+        if (!taskId) {
+            console.error(`🗑️ Task ID not found for message ID: ${messageId}`);
+            return;
+        }
+
+        try {
+            // Google Tasksのタスクを削除
+            await tasks.tasks.delete({
+                tasklist: '@default',
+                task: taskId,
+            });
+
+            console.log(`🗑️ Task ${taskId} deleted from Google Tasks.`);
+            taskMap.delete(messageId);
+
+            // Discordのメッセージを削除
+            await reaction.message.delete();
+        } catch (error) {
+            console.error('Failed to delete task:', error);
+        }
     }
 });
 
