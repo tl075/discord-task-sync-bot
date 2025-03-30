@@ -36,16 +36,16 @@ client.on('messageCreate', async (message) => {
     if (message.channel.id === process.env.TODAY_CHANNEL_ID) {
         try {
             const today = new Date();
-            const todayISO = today.toISOString().split('T')[0];  // 今日の日付だけを取得 (YYYY-MM-DD)
+            const todayISO = today.toISOString();  // フルISOフォーマット
 
             const task = await tasks.tasks.insert({
-                tasklist: '@default',
-                requestBody: {
+              tasklist: '@default',
+              requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: todayISO  // Google Tasks API に渡す形式
-                }
-            });
+                    due: todayISO  // ここをフルISOフォーマットに変更
+             }
+        });
 
             const taskTitle = task.data.title;
 
