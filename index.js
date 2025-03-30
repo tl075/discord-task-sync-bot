@@ -58,47 +58,15 @@ client.on('messageCreate', async (message) => {
             const taskId = task.data.id;
             const taskTitle = task.data.title;
 
-            taskMap.set(message.id, taskId); // DiscordメッセージIDとGoogle Task IDを保存
+            // メッセージIDとタスクIDを保存
+            taskMap.set(message.id, taskId);
 
             await message.delete();
             const replyMessage = await message.channel.send(`✅ 今日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
             console.log(`Task created: ${taskId}`);
 
             await replyMessage.react('🗑️'); // ゴミ箱アイコンに変更
-        } catch (error) {
-            console.error('Error adding task:', error.response?.data || error.message);
-            await message.delete();
-            await message.channel.send(`❌ タスク「**${originalContent}**」の追加に失敗しました。`);
-        }
-    }
-
-    // 明日のタスクとして追加
-    if (message.channel.id === process.env.TOMORROW_CHANNEL_ID) {
-        try {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setUTCHours(0, 0, 0, 0);
-            const tomorrowISO = tomorrow.toISOString();
-
-            const task = await tasks.tasks.insert({
-                tasklist: '@default',
-                requestBody: {
-                    title: originalContent,
-                    notes: 'Discordから追加されたタスク',
-                    due: tomorrowISO
-                }
-            });
-
-            const taskId = task.data.id;
-            const taskTitle = task.data.title;
-
-            taskMap.set(message.id, taskId); // DiscordメッセージIDとGoogle Task IDを保存
-
-            await message.delete();
-            const replyMessage = await message.channel.send(`✅ 明日のタスクとして「**${taskTitle}**」をGoogle Tasksに登録しました！`);
-            console.log(`Task created: ${taskId}`);
-
-            await replyMessage.react('🗑️'); // ゴミ箱アイコンに変更
+            taskMap.set(replyMessage.id, taskId); // **返信メッセージのIDとタスクIDを紐づける**
         } catch (error) {
             console.error('Error adding task:', error.response?.data || error.message);
             await message.delete();
