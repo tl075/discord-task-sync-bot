@@ -56,20 +56,20 @@ client.on('messageCreate', async (message) => {
         try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-
+    
             const task = await tasks.tasks.insert({
                 tasklist: '@default',
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: tomorrow.toISOString().split('T')[0] // 日付だけを指定
+                    due: tomorrow.toISOString().split('T')[0]  // ← ここを修正しました
                 }
             });
-
+    
             message.reply('✅ 明日のタスクとしてGoogle Tasksに登録しました！');
             console.log(`Task created: ${task.data.id}`);
         } catch (error) {
-            console.error('Error adding task:', error.response?.data || error.message);
+            console.error('Error adding task:', error.response.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
         }
     }
