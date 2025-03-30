@@ -46,7 +46,7 @@ client.on('messageCreate', async (message) => {
             message.reply('✅ 今日のタスクとしてGoogle Tasksに登録しました！');
             console.log(`Task created: ${task.data.id}`);
         } catch (error) {
-            console.error('Error adding task:', error);
+            console.error('Error adding task:', error.response?.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
         }
     }
@@ -62,14 +62,14 @@ client.on('messageCreate', async (message) => {
                 requestBody: {
                     title: message.content,
                     notes: 'Discordから追加されたタスク',
-                    due: tomorrow.toISOString()
+                    due: tomorrow.toISOString().split('T')[0] // 日付だけを指定
                 }
             });
 
             message.reply('✅ 明日のタスクとしてGoogle Tasksに登録しました！');
             console.log(`Task created: ${task.data.id}`);
         } catch (error) {
-            console.error('Error adding task:', error);
+            console.error('Error adding task:', error.response?.data || error.message);
             message.reply('❌ タスクの追加に失敗しました。');
         }
     }
